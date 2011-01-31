@@ -10,6 +10,8 @@ You use it whenever you would have a long set of nested if/else blocks or other 
         require 'ruler'
 	class TeaDrinker
 	include Ruler
+	attr_accessor :tea
+
 	def make_iced_tea
 	  puts "Making tea"
 	end
@@ -18,10 +20,14 @@ You use it whenever you would have a long set of nested if/else blocks or other 
 	  puts "Ahhhhhhh"
 	end
 
-	def tea_check
+	def thirsty?
+	  true
+	end
+
+	def tea_check outside_temp
    	  ruleset do
 	   fact :it_is_hot, outside_temp >= 100.0
-	   fact :iced_tea_made, tea.iced?
+	   fact :iced_tea_made, true
 	   fact :no_iced_tea, notf(:iced_tea_made)
 	   fact :am_thirsty, self.thirsty?
 
