@@ -13,11 +13,11 @@ require 'jeweler'
 Jeweler::Tasks.new do |gem|
   # gem is a Gem::Specification... see http://docs.rubygems.org/read/chapter/20 for more options
   gem.name = "ruler"
-  gem.homepage = "http://github.com/kognate/ruler"
+  gem.homepage = "http://github.com/BlueFrogGaming/ruler"
   gem.license = "MIT"
-  gem.summary = %Q{TODO: one-line summary of your gem}
-  gem.description = %Q{TODO: longer description of your gem}
-  gem.email = "josh@bluefroggaming.com"
+  gem.summary = %Q{Ruby DSL to help with rules and facts}
+  gem.description = %Q{Longer description of your gem}
+  gem.email = "kognate@gmail.com"
   gem.authors = ["Joshua Smith"]
   # Include your dependencies below. Runtime dependencies are required when using your gem,
   # and development dependencies are only needed for development (ie running rake tasks, tests, etc)

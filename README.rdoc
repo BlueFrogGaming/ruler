@@ -1,6 +1,40 @@
 = ruler
 
-Description goes here.
+Ruler is a simple module providing a DSL that helps with defining facts and rules.  While ruler is not a prolog or a
+full-fledged production rule system, it might become one someday.
+
+== How To Use It
+
+You use it whenever you would have a long set of nested if/else blocks or other kinds of conditional logic.
+	require 'rubygems'
+        require 'ruler'
+	class TeaDrinker
+	include Ruler
+	def make_iced_tea
+	  puts "Making tea"
+	end
+
+	def drink_iced_tea
+	  puts "Ahhhhhhh"
+	end
+
+	def tea_check
+   	  ruleset do
+	   fact :it_is_hot, outside_temp >= 100.0
+	   fact :iced_tea_made, tea.iced?
+	   fact :no_iced_tea, notf(:iced_tea_made)
+	   fact :am_thirsty, self.thirsty?
+
+	   rule [:it_is_hot, :am_thirsty, :no_iced_tea] do
+	   	make_iced_tea
+	   end
+
+	   rule [:it_is_hot, :am_thirsty, :iced_tea_made] do
+	   	drink_iced_tea
+	   end
+          end
+	end
+	end
 
 == Contributing to ruler
  
