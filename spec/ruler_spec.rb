@@ -3,6 +3,9 @@ require 'ruler'
 
 class Rules
   include Ruler
+  def initialize
+    #@DEBUG = true
+  end
   
   def test_one
     ruleset do
@@ -42,9 +45,9 @@ class Rules
       fact :firstone, true
       fact :secondone, true
       fact :thirdone, false
-      fact :fourthone, 1 == 1
-      fact :fifthone, 2 == 2
-      fact :sixthone, !false
+      fact :fourthone, (1 == 1)
+      fact :fifthone, (2 == 2)
+      fact :sixthone, true
 
       rule [:firstone,:secondone,:thirdone, :fourthone, :fifthone] do
         false

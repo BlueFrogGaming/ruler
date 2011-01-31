@@ -101,10 +101,19 @@ module Ruler
 # there is no check to see if fact names are valid,  and facts can be (re)defined
 #inside of rules.  Fact names are false if they are not defined.
   def rule vlist,docstr = nil,&blk
+    dbg = lambda {|va|  puts "|=-\t#{va} = #{Thread.current[:working_memory][va]}" }
+    if @DEBUG
+      puts "---------------------------------------"
+      puts vlist.join(" & ")
+      puts "======================================="
+      vlist.each {|v| dbg.call(v) }
+      puts "---------------------------------------"
+    end
     if Thread.current[:singletary] && Thread.current[:rulematched]
       Thread.current[:rulematched]
     else
-      Thread.current[:rulematched] = if vlist.inject {|k,v| k ? k && Thread.current[:working_memory][v] : false }
+      
+      Thread.current[:rulematched] = if vlist.inject(true) {|k,v| k ? k && Thread.current[:working_memory][v] : false }
                                        yield 
                                      end
     end
