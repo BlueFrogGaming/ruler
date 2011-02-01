@@ -22,6 +22,9 @@ end
 class BadFact < RulerError
 end
 
+class UnknownFact < RulerError
+end
+
 module Ruler
 # This module uses thread local storage and should be threadsafe. 
 #
@@ -62,6 +65,7 @@ module Ruler
   def ruleset singletary = true,&blk
     @rulesetids ||= []
     @rulesetids << UUID.generate
+    puts "Ruleset: #{@rulesetids.last} of #{@rulesetids.length}" if @DEBUG
     Thread.current[@rulesetids.last] = {:singletary => singletary, :rulematched => nil, :working_memory => {}}
     _rval = nil
     begin
@@ -132,7 +136,7 @@ module Ruler
 # there is no check to see if fact names are valid,  and facts can be (re)defined
 #inside of rules.  Fact names are false if they are not defined.
   def rule vlist,docstr = nil,&blk
-    conditional_call = lambda {|n| Thread.current[@rulesetids.last][:working_memory][n][:transient].nil? ? Thread.current[@rulesetids.last][:working_memory][n][:value] : Thread.current[@rulesetids.last][:working_memory][n][:block].call() }
+    conditional_call = lambda {|n| begin Thread.current[@rulesetids.last][:working_memory][n][:transient].nil? ? Thread.current[@rulesetids.last][:working_memory][n][:value] : Thread.current[@rulesetids.last][:working_memory][n][:block].call() rescue false end }
     dbg = lambda {|va|  puts begin "|=-\t#{va} = #{conditional_call.call(va)}" rescue "|>=- ERROR: #{$!}" end }
     if @DEBUG
       puts "---------------------------------------"
@@ -144,7 +148,7 @@ module Ruler
     if Thread.current[@rulesetids.last][:singletary] && Thread.current[@rulesetids.last][:rulematched]
       Thread.current[@rulesetids.last][:rulematched]
     else
-      Thread.current[@rulesetids.last][:rulematched] = if vlist.inject(true) {|k,v| k ? k && conditional_call.call(v) : false }
+      Thread.current[@rulesetids.last][:rulematched] = if vlist.inject(true) {|k,v| raise UnknownFact.new("Fact: #{v} is unknown") if Thread.current[@rulesetids.last][:working_memory][v].nil? ;k ? k && conditional_call.call(v) : false }
                                        yield 
                                      end
     end

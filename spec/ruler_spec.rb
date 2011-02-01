@@ -189,6 +189,15 @@ I think.
       end
     end
   end
+
+  def test_fourteen
+    ruleset do
+      fact :one, true
+      rule [:noe] do
+        "Should Break"
+      end
+    end
+  end
         
 end
 
@@ -259,6 +268,11 @@ describe Rules do
   it "should support nested rulesets" do
     r = Rules.new
     r.test_thirteen.should == "Nested Works"
+  end
+
+  it "should thrown an error if an unknown fact is checked" do
+    r = Rules.new
+    lambda { r.test_fourteen }.should raise_error(UnknownFact)
   end
 
 end
