@@ -170,6 +170,26 @@ I think.
       end
     end
   end
+
+  def test_twelve
+    ruleset do
+      fact :one do
+        raise StandardError.new("This Should be Caught")
+      end
+    end
+  end
+
+  def test_thirteen
+    ruleset do
+      fact :one,true
+      fact :two, test_one
+      
+      rule [:one,:two] do
+        "Nested Works"
+      end
+    end
+  end
+        
 end
 
 describe Rules do
@@ -229,6 +249,16 @@ describe Rules do
   it "should throw an exception if a dyanmic fact is declared in a notf" do
     r = Rules.new
     lambda { r.test_eleven }.should raise_error
+  end
+
+  it "should catch an exception thrown in a fact" do
+    r = Rules.new
+    lambda {r.test_twelve}.should raise_error(BadFact)
+  end
+
+  it "should support nested rulesets" do
+    r = Rules.new
+    r.test_thirteen.should == "Nested Works"
   end
 
 end

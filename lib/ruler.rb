@@ -1,3 +1,5 @@
+require 'rubygems'
+require 'uuid'
 # This module provides a set of methods to manage and run sets of facts and rules.
 # These rules take an array of fact names and all of the facts are true
 # the block passed to the rule is executed.  By default, only one rule can fire in a given ruleset.
@@ -15,6 +17,9 @@ class BadDefaultRule < RulerError
 end
 
 class BadNotCall < RulerError
+end
+
+class BadFact < RulerError
 end
 
 module Ruler
@@ -55,10 +60,16 @@ module Ruler
 # puts result
 
   def ruleset singletary = true,&blk
-    Thread.current[:singletary] = singletary
-    Thread.current[:rulematched] = nil
-    Thread.current[:working_memory] = {}
-    yield
+    @rulesetids ||= []
+    @rulesetids << UUID.generate
+    Thread.current[@rulesetids.last] = {:singletary => singletary, :rulematched => nil, :working_memory => {}}
+    _rval = nil
+    begin
+      _rval = yield
+    ensure
+      @rulesetids.pop
+    end
+    _rval
   end
 
 # multi_ruleset is a helper function to define rulesets that allow
@@ -79,16 +90,21 @@ module Ruler
 # will never be used.
   def fact name, dval = nil, &blk
     if dval.nil?
-      Thread.current[:working_memory][name] = {:value => yield }
+      _res = begin 
+               yield 
+             rescue 
+               raise BadFact.new($!)
+             end
+      Thread.current[@rulesetids.last][:working_memory][name] = {:value =>  _res }
     else
-      Thread.current[:working_memory][name] = {:value => dval }
+      Thread.current[@rulesetids.last][:working_memory][name] = {:value => dval }
     end
   end
 
 # a dynamic_fact is evaulated every time the fact is checked.  Unlike a normal fact, which 
 # is only evaluated once, dynamic facts are evaluated once for each rule they appear in
   def dynamic_fact name, &blk
-    Thread.current[:working_memory][name] = {:transient => true, :block => blk }
+    Thread.current[@rulesetids.last][:working_memory][name] = {:transient => true, :block => blk }
   end
 
 # allows for a fact to be NOT another fact.  notf cannot be used with a dynamic_fact
@@ -96,10 +112,10 @@ module Ruler
 #     fact :one, 10 == 10
 #     fact :notfone, not(:one)
   def notf name
-    if Thread.current[:working_memory][name][:transient]
+    if Thread.current[@rulesetids.last][:working_memory][name][:transient]
       raise BadNotCall.new("Cannot call notf on dynamic fact")
     else
-      not(Thread.current[:working_memory][name][:value])
+      not(Thread.current[@rulesetids.last][:working_memory][name][:value])
     end
   end
 
@@ -116,7 +132,8 @@ module Ruler
 # there is no check to see if fact names are valid,  and facts can be (re)defined
 #inside of rules.  Fact names are false if they are not defined.
   def rule vlist,docstr = nil,&blk
-    dbg = lambda {|va|  puts Thread.current[:working_memory][va][:transient].nil? ? "|=-\t#{va} = #{Thread.current[:working_memory][va][:value]}" : "|=-\t#{va} = #{Thread.current[:working_memory][va][:block].call()}" }
+    conditional_call = lambda {|n| Thread.current[@rulesetids.last][:working_memory][n][:transient].nil? ? Thread.current[@rulesetids.last][:working_memory][n][:value] : Thread.current[@rulesetids.last][:working_memory][n][:block].call() }
+    dbg = lambda {|va|  puts begin "|=-\t#{va} = #{conditional_call.call(va)}" rescue "|>=- ERROR: #{$!}" end }
     if @DEBUG
       puts "---------------------------------------"
       puts vlist.join(" & ")
@@ -124,11 +141,10 @@ module Ruler
       vlist.each {|v| dbg.call(v) }
       puts "---------------------------------------"
     end
-    if Thread.current[:singletary] && Thread.current[:rulematched]
-      Thread.current[:rulematched]
+    if Thread.current[@rulesetids.last][:singletary] && Thread.current[@rulesetids.last][:rulematched]
+      Thread.current[@rulesetids.last][:rulematched]
     else
-      conditional_call = lambda {|n| Thread.current[:working_memory][n][:transient].nil? ? Thread.current[:working_memory][n][:value] : Thread.current[:working_memory][n][:block].call() }
-      Thread.current[:rulematched] = if vlist.inject(true) {|k,v| k ? k && conditional_call.call(v) : false }
+      Thread.current[@rulesetids.last][:rulematched] = if vlist.inject(true) {|k,v| k ? k && conditional_call.call(v) : false }
                                        yield 
                                      end
     end
@@ -138,11 +154,11 @@ module Ruler
 # a rule that should fire if no others fire. You cannot have a default rule if you allow more
 # than one match.  The BadDefaultRule exception is raised.
   def default_rule &blk
-    raise BadDefaultRule.new("Can't have a default rule when multiple matches are allowed") unless Thread.current[:singletary]
-    if Thread.current[:singletary] && !Thread.current[:rulematched]
+    raise BadDefaultRule.new("Can't have a default rule when multiple matches are allowed") unless Thread.current[@rulesetids.last][:singletary]
+    if Thread.current[@rulesetids.last][:singletary] && !Thread.current[@rulesetids.last][:rulematched]
       yield
     else
-      Thread.current[:rulematched]
+      Thread.current[@rulesetids.last][:rulematched]
     end
   end
 end
