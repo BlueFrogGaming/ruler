@@ -16,7 +16,7 @@ Jeweler::Tasks.new do |gem|
   gem.homepage = "http://github.com/BlueFrogGaming/ruler"
   gem.license = "MIT"
   gem.summary = %Q{Ruby DSL to help with rules and facts}
-  gem.description = %Q{Longer description of your gem}
+  gem.description = %Q{Ruler module implements a DSL that makes it easy to write a set of facts and rules.  If you have some tricky conditional logic, Ruler can help clear it up.}
   gem.email = "kognate@gmail.com"
   gem.authors = ["Joshua Smith"]
   # Include your dependencies below. Runtime dependencies are required when using your gem,
