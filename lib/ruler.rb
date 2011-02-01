@@ -73,19 +73,28 @@ module Ruler
 # will never be used.
   def fact name, dval = nil, &blk
     if dval.nil?
-      Thread.current[:working_memory][name] = yield
+      Thread.current[:working_memory][name] = {:value => yield }
     else
-      Thread.current[:working_memory][name] = dval
+      Thread.current[:working_memory][name] = {:value => dval }
     end
   end
 
+# a dynamic_fact is evaulated every time the fact is checked.  Unlike a normal fact, which 
+# is only evaluated once, dynamic facts are evaluated once for each rule they appear in
+  def dynamic_fact name, &blk
+    Thread.current[:working_memory][name] = {:transient => true, :block => blk }
+  end
 
 # allows for a fact to be NOT another fact.  
 # for example:
 #     fact :one, 10 == 10
 #     fact :notfone, not(:one)
   def notf name
-    not(Thread.current[:working_memory][name])
+    if Thread.current[:working_memory][name][:transient]
+      not(Thread.current[:working_memory][name][:block].call())
+    else
+      not(Thread.current[:working_memory][name][:value])
+    end
   end
 
 # a rule takes a list of fact names and a block.  Rules are evaluated in the order
@@ -101,7 +110,7 @@ module Ruler
 # there is no check to see if fact names are valid,  and facts can be (re)defined
 #inside of rules.  Fact names are false if they are not defined.
   def rule vlist,docstr = nil,&blk
-    dbg = lambda {|va|  puts "|=-\t#{va} = #{Thread.current[:working_memory][va]}" }
+    dbg = lambda {|va|  puts Thread.current[:working_memory][va][:transient].nil? ? "|=-\t#{va} = #{Thread.current[:working_memory][va][:value]}" : "|=-\t#{va} = #{Thread.current[:working_memory][va][:block].call()}" }
     if @DEBUG
       puts "---------------------------------------"
       puts vlist.join(" & ")
@@ -112,8 +121,8 @@ module Ruler
     if Thread.current[:singletary] && Thread.current[:rulematched]
       Thread.current[:rulematched]
     else
-      
-      Thread.current[:rulematched] = if vlist.inject(true) {|k,v| k ? k && Thread.current[:working_memory][v] : false }
+      conditional_call = lambda {|n| Thread.current[:working_memory][n][:transient].nil? ? Thread.current[:working_memory][n][:value] : Thread.current[:working_memory][n][:block].call() }
+      Thread.current[:rulematched] = if vlist.inject(true) {|k,v| k ? k && conditional_call.call(v) : false }
                                        yield 
                                      end
     end
