@@ -12,3 +12,4 @@ group :development do
   gem "rcov", ">= 0"
   gem "mocha"
 end
+gem 'uuid'
