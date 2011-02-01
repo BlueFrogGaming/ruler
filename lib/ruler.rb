@@ -8,7 +8,13 @@
 # Copyright:: (c) 2011 Blue Frog Gaming, All Rights Reserved
 # License:: This file has no public license.  
 
-class BadDefaultRule < StandardError
+class RulerError < StandardError
+end
+
+class BadDefaultRule < RulerError
+end
+
+class BadNotCall < RulerError
 end
 
 module Ruler
@@ -85,13 +91,13 @@ module Ruler
     Thread.current[:working_memory][name] = {:transient => true, :block => blk }
   end
 
-# allows for a fact to be NOT another fact.  
+# allows for a fact to be NOT another fact.  notf cannot be used with a dynamic_fact
 # for example:
 #     fact :one, 10 == 10
 #     fact :notfone, not(:one)
   def notf name
     if Thread.current[:working_memory][name][:transient]
-      not(Thread.current[:working_memory][name][:block].call())
+      raise BadNotCall.new("Cannot call notf on dynamic fact")
     else
       not(Thread.current[:working_memory][name][:value])
     end

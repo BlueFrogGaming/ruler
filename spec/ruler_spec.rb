@@ -137,6 +137,39 @@ I think.
       end
     end
   end
+
+  def test_ten 
+    #@DEBUG = true
+    ruleset do
+      dynamic_fact :one do
+        self.checking_method
+      end
+      
+      fact :wrong, false
+
+      rule [:one, :wrong] do
+        false
+      end
+
+      rule [:one, :one, :wrong] do
+        false
+      end
+    end
+  end
+
+  def test_eleven
+    ruleset do
+      dynamic_fact :one do 
+        true
+      end
+      
+      fact :two, notf(:one)
+      
+      default_rule do
+        true
+      end
+    end
+  end
 end
 
 describe Rules do
@@ -185,6 +218,17 @@ describe Rules do
   it "should throw if there is a defualt rule in a multimatch" do
     r = Rules.new
     lambda { r.test_nine.should}.should raise_error
+  end
+
+  it "should call dynamic rules each time they are evaluated" do
+    r = Rules.new
+    r.expects(:checking_method).times(3).returns(true)
+    r.test_ten.should be(nil)
+  end
+
+  it "should throw an exception if a dyanmic fact is declared in a notf" do
+    r = Rules.new
+    lambda { r.test_eleven }.should raise_error
   end
 
 end
